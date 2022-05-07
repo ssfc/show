@@ -30,7 +30,7 @@ public:
 		num_vertex = input_num_vertex; 
         num_edge = input_num_edge;
 //        num_color = input_num_color;
-        num_color = 64;
+        num_color = 63;
 
 		adjacent.resize(num_vertex); // initialize adjacent matrix; 
         for(int i=0;i<adjacent.size();i++)
@@ -161,10 +161,11 @@ public:
                     {
                         aspiration_criterion = new_num_conflict; 
                         
-                        if(tabu_tenure_table[vertex_changed][new_color] > 0)  // permit tabu move if it is better than any prior
+                        // permit tabu move if it is better than previous best; 
+                        if(tabu_tenure_table[vertex_changed][new_color] > 0)  
                         {
                             tabu_tenure_table[vertex_changed][new_color] = 0; 
-                            cout<<"satisfy aspiration tabu permitted: "<<current_num_conflict<<"->"<<new_num_conflict<<endl; 
+                            cout<<"satisfy aspiration tabu released: "<<current_num_conflict<<"->"<<new_num_conflict<<endl; 
                             break; 
                         }
 
@@ -173,7 +174,7 @@ public:
                     {                      
                         if(tabu_tenure_table[vertex_changed][new_color] > 0)
                         {
-                            // tabu move isn't good enough
+                            // tabu move does not satisfy aspiration; 
                             cout<<"tabu forbidden"<<endl;
                             continue; 
                         }
@@ -186,8 +187,7 @@ public:
             }
             
             tabu_tenure_table[vertex_changed][solution[vertex_changed]] = current_num_conflict + generate_random_integer(1,10);            
-
-            // Move to next iteration of tabucol with new solution;             
+            
             solution = new_solution; 
             for(int i=0;i<num_vertex;i++)
             {
@@ -214,7 +214,7 @@ public:
             return true;
     }
 
-	void save_vertex_color() // print color of each vertex; 
+	void save_vertex_color() // save color of each vertex; 
     {
         ofstream outFile("solution.txt");
         // the important part
