@@ -24,13 +24,13 @@ class Graph
 	vector<vector<int> > adjacent; 
     vector<int> solution;
 public:
-    // Constructor; 
+    // initialize variables; 
 	void initialize_graph(int input_num_vertex, int input_num_edge, int input_num_color) 
 	{
 		num_vertex = input_num_vertex; 
         num_edge = input_num_edge;
 //        num_color = input_num_color;
-        num_color = 63;
+        num_color = 61;
 
 		adjacent.resize(num_vertex); // initialize adjacent matrix; 
         for(int i=0;i<adjacent.size();i++)
@@ -84,7 +84,7 @@ public:
     }
     
     // do tabucol for graph; 
-	bool tabucol(int max_walks = 100, int max_iterations = 1000000) 
+	bool tabucol(int max_walks = 100, int max_iterations = 10000000) 
     {     
         vector<vector<int>> tabu_tenure_table; 
         tabu_tenure_table.resize(num_vertex);
@@ -204,7 +204,7 @@ public:
         if(current_num_conflict != 0)
             return false;
         else
-            cout<<"find answer!"<<endl;
+            cout<<"find answer for color number "<<num_color<<": "<<endl;
             for(int i=0;i<num_vertex;i++)
             {
                 cout<<i<<"->"<<solution[i]<<" ";            
@@ -224,8 +224,7 @@ public:
 };
 
 int main() 
-{
-    
+{    
     Graph g_test;
     
     int counter = 0;
