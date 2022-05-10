@@ -32,8 +32,11 @@ public:
 	void initialize_graph(int input_num_vertex, int input_num_edge, int input_num_color); // initialize variables; 
     void print_graph(); // print adjacent matrix of graph; 
 	void add_edge(int head, int tail);  // function to add an edge to graph; 
+
     int compute_conflict(vector<int> sol); 
+    void update_tabu_tenure_table(); 
 	bool tabucol(int max_walks, int max_iterations); // do tabucol for graph; 
+
     void save_vertex_color(); 
 };
 
@@ -42,7 +45,7 @@ void Graph::initialize_graph(int input_num_vertex, int input_num_edge, int input
     num_vertex = input_num_vertex; 
     num_edge = input_num_edge;
 //        num_color = input_num_color;
-    num_color = 90;
+    num_color = 70;
 
     adjacent.resize(num_vertex); // initialize adjacent matrix; 
     for(int i=0;i<adjacent.size();i++)
@@ -93,6 +96,20 @@ int Graph::compute_conflict(vector<int> sol)
     return conflict;
 }
 
+void Graph::update_tabu_tenure_table()
+{
+    for(int i=0;i<num_vertex;i++)
+    {
+        for(int j=0;j<num_color;j++)
+        {
+            if(tabu_tenure_table[i][j] > 0)
+            {
+                tabu_tenure_table[i][j] = tabu_tenure_table[i][j] - 1;
+            }
+        }
+    }
+}
+
 bool Graph::tabucol(int max_walks = 100, int max_iterations = 10000000) 
 {     
     tabu_tenure_table.resize(num_vertex);
@@ -129,16 +146,15 @@ bool Graph::tabucol(int max_walks = 100, int max_iterations = 10000000)
                     current_num_conflict++; 
                 }
             }
-        }            
+        }          
 
-        // convert conflict vertex from set to vector; 
-        vector<int> vector_conflict_vertex(set_conflict_vertex.begin(), set_conflict_vertex.end());
-        
         if(current_num_conflict == 0) // Found a solution.
         {
             break; 
-        }
+        }  
 
+        // convert conflict vertex from set to vector; 
+        vector<int> vector_conflict_vertex(set_conflict_vertex.begin(), set_conflict_vertex.end());
         vector<int> new_solution(num_vertex, -1);
         int vertex_changed_idx; 
         int vertex_changed; 
@@ -146,7 +162,8 @@ bool Graph::tabucol(int max_walks = 100, int max_iterations = 10000000)
 
         for(int step=0; step<max_walks; step++)
         {
-            // Choose a random vertex to move; 
+//            cout<<"step: "<<step<<endl; 
+            // Choose a random vertex to change; 
             vertex_changed_idx = generate_random_integer(0, vector_conflict_vertex.size()-1); 
             vertex_changed = vector_conflict_vertex[vertex_changed_idx];
 
@@ -165,48 +182,44 @@ bool Graph::tabucol(int max_walks = 100, int max_iterations = 10000000)
             int new_num_conflict = compute_conflict(new_solution); 
             if(new_num_conflict < current_num_conflict)  // found an improved solution
             {                    
-                if(new_num_conflict < aspiration_criterion)
+                if(new_num_conflict < aspiration_criterion)  // better than aspiration; 
                 {
                     aspiration_criterion = new_num_conflict; 
                     
                     // permit tabu move if it is better than previous best; 
                     if(tabu_tenure_table[vertex_changed][new_color] > 0)  
                     {
-                        tabu_tenure_table[vertex_changed][new_color] = 0; 
-                        cout<<"satisfy aspiration tabu released: "<<current_num_conflict<<"->"<<new_num_conflict<<endl; 
+                        tabu_tenure_table[vertex_changed][solution[vertex_changed]] = current_num_conflict + generate_random_integer(1,10); 
+                        cout<<"satisfy aspiration, tabu released: "<<current_num_conflict<<"->"<<new_num_conflict<<endl; 
+                        cout<<"Iteration "<<iteration<<": "<<current_num_conflict<<"->"<<new_num_conflict<<endl;
                         break; 
                     }
-
+                    else 
+                    {
+                        tabu_tenure_table[vertex_changed][solution[vertex_changed]] = current_num_conflict + generate_random_integer(1,10); 
+                        cout<<"Iteration "<<iteration<<": "<<current_num_conflict<<"->"<<new_num_conflict<<endl;
+                        break; 
+                    }
                 }
-                else
+                else // not better than aspiration; 
                 {                      
                     if(tabu_tenure_table[vertex_changed][new_color] > 0)
                     {
                         // tabu move does not satisfy aspiration; 
-                        cout<<"tabu forbidden"<<endl;
-                        continue; 
+                        cout<<"although better, not better than aspiration, tabu forbidden"<<endl;
+                    }
+                    else
+                    {
+                        tabu_tenure_table[vertex_changed][solution[vertex_changed]] = current_num_conflict + generate_random_integer(1,10); 
+                        cout<<"Iteration "<<iteration<<": "<<current_num_conflict<<"->"<<new_num_conflict<<endl;
+                        break; 
                     }
                 }
-                
-                cout<<"Iteration "<<iteration<<": "<<current_num_conflict<<"->"<<new_num_conflict<<endl;
-                break; 
             }
-
-        }
-        
-        tabu_tenure_table[vertex_changed][solution[vertex_changed]] = current_num_conflict + generate_random_integer(1,10);            
+        }                 
         
         solution = new_solution; 
-        for(int i=0;i<num_vertex;i++)
-        {
-            for(int j=0;j<num_color;j++)
-            {
-                if(tabu_tenure_table[i][j] > 0)
-                {
-                    tabu_tenure_table[i][j] = tabu_tenure_table[i][j] - 1;
-                }
-            }
-        }
+        update_tabu_tenure_table(); 
     }
 
     if(current_num_conflict != 0)
